@@ -13,32 +13,40 @@ import 'package:projects/services/crud/crud_exceptions.dart';
 class NoteServices {
   Database? _db;
 
+  factory NoteServices() => _shared;
   static final NoteServices _shared = NoteServices._shareInstance();
-  NoteServices._shareInstance();
-factory NoteServices() => _shared;
+
+  NoteServices._shareInstance() {
+    _notesStreamController = StreamController<List<DatabaseNote>>.broadcast(
+      onListen: () {
+        _notesStreamController.sink.add(_notes);
+      },
+    );
+  }
+
   List<DatabaseNote> _notes = [];
-  final _notesStreamController =
-      StreamController<List<DatabaseNote>>.broadcast();
+  late final StreamController<List<DatabaseNote>> _notesStreamController;
 
   Stream<List<DatabaseNote>> get allNote => _notesStreamController.stream;
 
-  Future<DatabaseUser> getOrCreateUser({required String email}) async{
+  Future<DatabaseUser> getOrCreateUser({required String email}) async {
     try {
-      final user = await getUser(email:email);
+      final user = await getUser(email: email);
       return user;
-    } on CouldNotFindUser{
+    } on CouldNotFindUser {
       final createdUser = await createUser(email: email);
       return createdUser;
-    } catch(e){
+    } catch (e) {
       rethrow;
     }
-
   }
+
   Future<void> _cacheNotes() async {
     final allNotes = await getAllNote();
     _notes = allNotes.toList();
     _notesStreamController.add(_notes);
   }
+
   Future<DatabaseNote> updateNote({
     required DatabaseNote note,
     required String text,
@@ -205,12 +213,11 @@ factory NoteServices() => _shared;
   }
 
   Future<void> _ensureDbIsOpen() async {
-    try{
+    try {
       await open();
-    } on DatabaseAlreadyOpenException {
-
-    }
+    } on DatabaseAlreadyOpenException {}
   }
+
   Future<void> open() async {
     if (_db != null) {
       throw DatabaseAlreadyOpenException();
