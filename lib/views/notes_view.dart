@@ -15,12 +15,12 @@ class NotesView extends StatefulWidget {
 
 class _NotesViewState extends State<NotesView> {
   late final NoteServices _noteServices;
+
   String get userEmail => AuthService.firebase().currentUser!.email!;
 
   @override
   void initState() {
     _noteServices = NoteServices();
-    _noteServices.open();
     super.initState();
   }
 
@@ -38,15 +38,16 @@ class _NotesViewState extends State<NotesView> {
         actions: [
           PopupMenuButton<MenuAction>(
             onSelected: (value) async {
-              switch(value){
+              switch (value) {
                 case MenuAction.logout:
                   final shouldLogout = await showLogoutDialog(context);
-                  if(shouldLogout){
+                  if (shouldLogout) {
                     await AuthService.firebase().logOut();
-                    Navigator.of(context).pushNamedAndRemoveUntil(loginRoute, (_) => false);
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil(loginRoute, (_) => false);
                   }
               }
-
             },
             itemBuilder: (context) {
               return const [
@@ -59,7 +60,24 @@ class _NotesViewState extends State<NotesView> {
           ),
         ],
       ),
-      body: const Text('Hello world'),
+      body: FutureBuilder(
+        future: _noteServices.getOrCreateUser(email: userEmail),
+        builder: (context, snapshot) {
+          switch(snapshot.connectionState){
+            case ConnectionState.done:
+              return StreamBuilder(stream: _noteServices.allNote, builder: (context,snapshot){
+                switch (snapshot.connectionState) {
+                  case ConnectionState.waiting:
+                    return const Text('Waiting for all notes...');
+                  default:
+                    return const CircularProgressIndicator();
+                }
+              });
+            default:
+              return const CircularProgressIndicator();
+          }
+        },
+      ),
     );
   }
 }
@@ -78,9 +96,12 @@ Future<bool> showLogoutDialog(BuildContext context) {
             },
             child: const Text('Cancel'),
           ),
-          TextButton(onPressed: () {
-            Navigator.of(context).pop(true);
-          }, child: const Text('Log out')),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(true);
+            },
+            child: const Text('Log out'),
+          ),
         ],
       );
     },
