@@ -5,9 +5,9 @@ import 'package:projects/constants/routes.dart';
 import 'package:projects/services/auth/auth_service.dart';
 import '../firebase_options.dart';
 import 'dart:developer' as devtools show log;
-import 'package:projects/utilities/show_error_dialog.dart';
 
 import '../services/auth/auth_exceptions.dart';
+import '../utilities/dialogs/error_dialog.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key, required this.title});

@@ -12,8 +12,8 @@ import 'package:projects/services/crud/crud_exceptions.dart';
 
 class NoteServices {
   Database? _db;
+  List<DatabaseNote> _notes = [];
 
-  factory NoteServices() => _shared;
   static final NoteServices _shared = NoteServices._shareInstance();
 
   NoteServices._shareInstance() {
@@ -24,7 +24,7 @@ class NoteServices {
     );
   }
 
-  List<DatabaseNote> _notes = [];
+  factory NoteServices() => _shared;
   late final StreamController<List<DatabaseNote>> _notesStreamController;
 
   Stream<List<DatabaseNote>> get allNote => _notesStreamController.stream;
@@ -262,7 +262,6 @@ class DatabaseUser {
 
 class DatabaseNote {
   final int id;
-
   final int userId;
   final String text;
   final bool isSyncedWithCloud;
@@ -308,7 +307,7 @@ const createUserTable = ''' CREATE TABLE IF NOT EXISTS "user" (
       );
       ''';
 const createNoteTable = ''' 
-  CREATE TABLE IF NOT EXISTS "note" (
+  CREATE TABLE IF NOT EXISTS "notes" (
     "id" INTEGER NOT NULL,
     "user_id" INTEGER NOT NULL,
     "text" TEXT,

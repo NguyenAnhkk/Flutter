@@ -42,7 +42,7 @@ class _NewNoteViewState extends State<NewNoteView> {
     }
     final currentUser = AuthService.firebase().currentUser!;
     final email = currentUser.email!;
-    final owner = await _noteServices.getUser(email: email);
+    final owner = await _noteServices.getOrCreateUser(email: email);
     return await _noteServices.createNote(owner: owner);
   }
 
@@ -73,12 +73,22 @@ class _NewNoteViewState extends State<NewNoteView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('New Note')),
-      body: FutureBuilder(
+      body: FutureBuilder<DatabaseNote>(
         future: createNewNote(),
         builder: (context, snapshot) {
           switch (snapshot.connectionState) {
             case ConnectionState.done:
-              _note = snapshot.data as DatabaseNote;
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('Error: \\${snapshot.error}'),
+                );
+              }
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: Text('Unable to create note.'),
+                );
+              }
+              _note = snapshot.data!;
               _setupTextControlerListener();
               return TextField(
                 controller: _textController,
