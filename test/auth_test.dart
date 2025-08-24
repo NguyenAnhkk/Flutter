@@ -106,7 +106,7 @@ class MockAuthProvider implements AuthProvider {
     // test mong đợi password này sẽ throw WrongPasswordAuthExceptions
     if (password == 'foobar') throw WrongPasswordAuthExceptions();
 
-    final user = AuthUser(isEmailVerified: false, email: 'foo@bar.com');
+    final user = AuthUser(id:'my_id',isEmailVerified: false, email: 'foo@bar.com');
     _user = user;
     return user;
   }
@@ -124,7 +124,7 @@ class MockAuthProvider implements AuthProvider {
     if (!isInitialized) throw NotInitializedException();
     final user = _user;
     if (user == null) throw UserNotLoggedInAuthExceptions();
-    final newUser = AuthUser(isEmailVerified: true, email: 'foo@bar.com');
+    final newUser = AuthUser(id:'my_id',isEmailVerified: true, email: 'foo@bar.com');
     _user = newUser;
   }
 }

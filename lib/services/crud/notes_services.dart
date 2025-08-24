@@ -28,25 +28,29 @@ class NoteServices {
   factory NoteServices() => _shared;
   late final StreamController<List<DatabaseNote>> _notesStreamController;
 
-  Stream<List<DatabaseNote>> get allNote => _notesStreamController.stream.filter((note){
-    final currentUser = _user;
-    if(currentUser != null){
-return note.userId == currentUser.id;
-    }else{
-      throw UserShouldBeSetBeforeReadingAllNote();
-    }
-  });
+  Stream<List<DatabaseNote>> get allNote =>
+      _notesStreamController.stream.filter((note) {
+        final currentUser = _user;
+        if (currentUser != null) {
+          return note.userId == currentUser.id;
+        } else {
+          throw UserShouldBeSetBeforeReadingAllNote();
+        }
+      });
 
-  Future<DatabaseUser> getOrCreateUser({required String email, bool setAsCurrentUser = true}) async {
+  Future<DatabaseUser> getOrCreateUser({
+    required String email,
+    bool setAsCurrentUser = true,
+  }) async {
     try {
       final user = await getUser(email: email);
-      if(setAsCurrentUser){
+      if (setAsCurrentUser) {
         _user = user;
       }
       return user;
     } on CouldNotFindUser {
       final createdUser = await createUser(email: email);
-      if(setAsCurrentUser){
+      if (setAsCurrentUser) {
         _user = createdUser;
       }
       return createdUser;
