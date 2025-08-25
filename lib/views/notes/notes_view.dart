@@ -1,13 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:projects/services/auth/auth_service.dart';
+import 'package:projects/services/auth/bloc/auth_event.dart';
 import 'package:projects/services/cloud/cloud_note.dart';
 import 'package:projects/services/cloud/firebase_cloud_storage.dart';
 import 'package:projects/services/crud/notes_services.dart';
 import 'package:projects/views/notes/notes_list_view.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart' show ReadContext;
 import '../../constants/routes.dart';
 import '../../enums/menu_action.dart';
+import '../../services/auth/bloc/auth_bloc.dart';
 import '../../utilities/dialogs/logout_dialog.dart';
 
 class NotesView extends StatefulWidget {
@@ -46,10 +49,7 @@ class _NotesViewState extends State<NotesView> {
                 case MenuAction.logout:
                   final shouldLogout = await showLogoutDialog(context);
                   if (shouldLogout) {
-                    await AuthService.firebase().logOut();
-                    Navigator.of(
-                      context,
-                    ).pushNamedAndRemoveUntil(loginRoute, (_) => false);
+                    context.read<AuthBloc>().add(const AuthEventLogOut());
                   }
               }
             },
@@ -78,10 +78,9 @@ class _NotesViewState extends State<NotesView> {
                     await _noteServices.deleteNote(documentId: note.documentId);
                   },
                   onTap: (note) {
-                    Navigator.of(context).pushNamed(
-                      createOrUpdateNoteRoute,
-                      arguments: note,
-                    );
+                    Navigator.of(
+                      context,
+                    ).pushNamed(createOrUpdateNoteRoute, arguments: note);
                   },
                 );
               } else {
