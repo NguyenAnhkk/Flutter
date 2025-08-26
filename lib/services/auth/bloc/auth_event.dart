@@ -5,17 +5,31 @@ abstract class AuthEvent {
   const AuthEvent();
 }
 
-class AuthEvetInitialize extends AuthEvent{
+class AuthEvetInitialize extends AuthEvent {
   const AuthEvetInitialize();
 }
 
-class AuthEventLogIn extends AuthEvent{
+class AuthEventLogIn extends AuthEvent {
   final String email;
   final String password;
+
   const AuthEventLogIn(this.email, this.password);
 }
 
-class AuthEventLogOut extends AuthEvent{
+class AuthEventLogOut extends AuthEvent {
   const AuthEventLogOut();
 }
 
+class AuthEventSendEmailVerification extends AuthEvent {
+  const AuthEventSendEmailVerification();
+}
+
+class AuthEventRegister extends AuthEvent {
+  final String email;
+  final String password;
+
+  const AuthEventRegister(this.email, this.password);
+}
+class AuthEventShouldRegister extends AuthEvent{
+  const AuthEventShouldRegister();
+}
