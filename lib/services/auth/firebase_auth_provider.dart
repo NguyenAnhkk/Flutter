@@ -14,13 +14,13 @@ class FirebaseAuthProvider implements AuthProvider {
     required String password,
   }) async {
     try {
-      FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      final user = currentUser;
+      final user = credential.user;
       if (user != null) {
-        return user;
+        return AuthUser.fromFirebase(user);
       } else {
         throw UserNotLoggedInAuthExceptions();
       }
@@ -56,19 +56,21 @@ class FirebaseAuthProvider implements AuthProvider {
     required String password,
   }) async {
     try {
-      FirebaseAuth.instance.signInWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      final user = currentUser;
-      if (user != null) {
-        return user;
+      // Ensure we have the freshest verification status
+      await FirebaseAuth.instance.currentUser?.reload();
+      final refreshedUser = FirebaseAuth.instance.currentUser ?? credential.user;
+      if (refreshedUser != null) {
+        return AuthUser.fromFirebase(refreshedUser);
       } else {
         throw UserNotLoggedInAuthExceptions();
       }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        throw UserNotLoggedInAuthExceptions();
+        throw UserNotFoundAuthException();
       } else if (e.code == 'wrong-password') {
         throw WrongPasswordAuthExceptions();
       } else {
@@ -104,6 +106,8 @@ class FirebaseAuthProvider implements AuthProvider {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // Refresh current user on app start to pick up verification status
+    await FirebaseAuth.instance.currentUser?.reload();
   }
 
   @override
@@ -112,9 +116,9 @@ class FirebaseAuthProvider implements AuthProvider {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: toEmail);
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
-        case 'firebase_auth/invalid_email':
+        case 'invalid-email':
           throw InvalidEmailAuthExceptions();
-        case 'firebase_auth/user_not_found':
+        case 'user-not-found':
           throw UserNotFoundAuthException();
         default:
           throw GenericAuthExceptions();

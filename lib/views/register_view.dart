@@ -25,7 +25,7 @@ class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
-
+  bool _isLoading = false;
   @override
   void initState() {
     _email = TextEditingController();
@@ -293,5 +293,16 @@ class _RegisterViewState extends State<RegisterView> {
         AuthEventRegister(email, password),
       );
     }
+    setState(() {
+      _isLoading = true;
+    });
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
   }
 }
