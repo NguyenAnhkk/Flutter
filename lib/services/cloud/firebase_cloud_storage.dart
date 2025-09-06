@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:projects/services/cloud/cloud_note.dart';
 import 'package:projects/services/cloud/cloud_storage_constants.dart';
@@ -27,15 +28,11 @@ class FirebaseCloudStorage {
     required String documentId,
     required String text,
     List<String>? imagePaths,
-    int? backgroundColor,
   }) async {
     try {
       final Map<String, Object?> data = {textFieldName: text};
       if (imagePaths != null) {
         data[imagePathsFieldName] = imagePaths;
-      }
-      if (backgroundColor != null) {
-        data[backgroundColorFieldName] = backgroundColor;
       }
       await notes.doc(documentId).update(data);
     } catch (e) {
@@ -61,7 +58,6 @@ class FirebaseCloudStorage {
       ownerUserIdFieldName: ownerUserId,
       textFieldName: '',
       imagePathsFieldName: <String>[],
-      backgroundColorFieldName: Colors.white.value,
     });
     final fetchedNote = await document.get();
     return CloudNote(
@@ -69,7 +65,6 @@ class FirebaseCloudStorage {
       ownerUserId: ownerUserId,
       text: '',
       imagePaths: const [],
-      backgroundColor: Colors.white.value,
     );
   }
 
@@ -103,4 +98,5 @@ class FirebaseCloudStorage {
       print('Error deleting local image: $e');
     }
   }
+
 }

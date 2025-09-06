@@ -10,7 +10,6 @@ import 'dart:io';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class CreateUpdateNoteView extends StatefulWidget {
   const CreateUpdateNoteView({super.key});
@@ -27,7 +26,6 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   List<String> _imagePaths = [];
   List<File> _localImages = [];
   bool _isUploading = false;
-  Color _backgroundColor = Colors.white;
 
   @override
   void initState() {
@@ -46,7 +44,6 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
       documentId: note.documentId,
       text: text,
       imagePaths: _imagePaths,
-      backgroundColor: _backgroundColor.value,
     );
   }
 
@@ -145,7 +142,8 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
     );
   }
 
-  // Phương thức xem gallery toàn bộ ảnh
+
+
   void _showImageGallery(BuildContext context, int initialIndex) {
     final List<ImageProvider> imageProviders = [
       ..._imagePaths.map((path) => FileImage(File(path))),
@@ -285,7 +283,6 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   Future<void> _removeImage(int index) async {
     final removedPath = _imagePaths[index];
 
-    // Hiển thị dialog xác nhận
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -312,12 +309,12 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
       // Delete image from local storage
       await _noteServices.deleteNoteImage(removedPath);
 
-      // Update note without the removed image
-      await _noteServices.updateNote(
-        documentId: _note!.documentId,
-        text: _textController.text,
-        imagePaths: _imagePaths,
-      );
+       // Update note without the removed image
+       await _noteServices.updateNote(
+         documentId: _note!.documentId,
+         text: _textController.text,
+         imagePaths: _imagePaths,
+       );
 
       ScaffoldMessenger.of(
         context,
@@ -345,7 +342,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
               if (_note == null || (text.isEmpty && _imagePaths.isEmpty)) {
                 await showCannotShareEmptyNoteDialog(context);
               } else {
-                // Share both text and image paths
+                // Share text and images
                 String shareText = text;
                 if (_imagePaths.isNotEmpty) {
                   shareText += '\n\nImages: ${_imagePaths.join('\n')}';
@@ -354,6 +351,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
               }
             },
             icon: const Icon(Icons.share),
+            tooltip: 'Chia sẻ',
           ),
         ],
       ),
@@ -374,7 +372,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
 
               return Column(
                 children: [
-                  // Image gallery - show both saved and local images
+
                   // Image gallery - show both saved and local images
                   if (_imagePaths.isNotEmpty || _localImages.isNotEmpty)
                     Container(
@@ -566,10 +564,11 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
         },
       ),
 
-      // Add image button
+      // Add image buttons
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          // Camera button
           FloatingActionButton(
             heroTag: 'camera_btn',
             onPressed: () => _pickImage(ImageSource.camera),
@@ -577,6 +576,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
             child: const Icon(Icons.camera_alt),
           ),
           const SizedBox(height: 8),
+          // Gallery button
           FloatingActionButton(
             heroTag: 'gallery_btn',
             onPressed: () => _pickImage(ImageSource.gallery),
