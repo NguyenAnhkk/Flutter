@@ -50,6 +50,13 @@ class _NotesViewState extends State<NotesView> {
         actions: [
           IconButton(
             onPressed: () {
+              Navigator.of(context).pushNamed(qrGeneratorRoute);
+            },
+            icon: const Icon(Icons.qr_code, size: 28),
+            tooltip: 'QR Code Generator',
+          ),
+          IconButton(
+            onPressed: () {
               Navigator.of(context).pushNamed(createOrUpdateNoteRoute);
             },
             icon: const Icon(Icons.add, size: 28),

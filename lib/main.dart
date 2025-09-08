@@ -15,6 +15,7 @@ import 'package:projects/views/notes/create_update_note_view.dart';
 import 'package:projects/views/notes/notes_view.dart';
 import 'package:projects/views/register_view.dart';
 import 'package:projects/views/verify_email_view.dart';
+import 'package:projects/views/qr_generator_view.dart';
 import 'package:projects/constants/routes.dart';
 import 'package:test/expect.dart';
 
@@ -30,6 +31,7 @@ void main() {
       ),
       routes: {
         createOrUpdateNoteRoute: (context) => const CreateUpdateNoteView(),
+        qrGeneratorRoute: (context) => const QRGeneratorView(),
       },
     ),
   );
