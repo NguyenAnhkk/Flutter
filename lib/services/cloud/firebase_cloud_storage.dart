@@ -26,13 +26,17 @@ class FirebaseCloudStorage {
 
   Future<void> updateNote({
     required String documentId,
+    required String title,
     required String text,
     List<String>? imagePaths,
     DateTime? reminderAt,
     String? reminderTitle,
   }) async {
     try {
-      final Map<String, Object?> data = {textFieldName: text};
+      final Map<String, Object?> data = {
+        textFieldName: text,
+        titleFieldName: title,
+      };
       if (imagePaths != null) {
         data[imagePathsFieldName] = imagePaths;
       }
@@ -67,6 +71,7 @@ class FirebaseCloudStorage {
     final document = await notes.add({
       ownerUserIdFieldName: ownerUserId,
       textFieldName: '',
+      titleFieldName: '',
       imagePathsFieldName: <String>[],
       reminderAtFieldName: null,
       reminderTitleFieldName: null,
@@ -76,6 +81,7 @@ class FirebaseCloudStorage {
       documentId: fetchedNote.id,
       ownerUserId: ownerUserId,
       text: '',
+      title: '',
       imagePaths: const [],
       reminderAt: null,
       reminderTitle: null,

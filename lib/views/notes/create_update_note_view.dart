@@ -21,7 +21,8 @@ class CreateUpdateNoteView extends StatefulWidget {
 class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   CloudNote? _note;
   late final FirebaseCloudStorage _noteServices;
-  late final TextEditingController _textController;
+  late final TextEditingController _titleController; // Thêm controller cho tiêu đề
+  late final TextEditingController _contentController; // Đổi tên từ _textController
   final ImagePicker _imagePicker = ImagePicker();
   List<String> _imagePaths = [];
   List<File> _localImages = [];
@@ -32,19 +33,22 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   @override
   void initState() {
     _noteServices = FirebaseCloudStorage();
-    _textController = TextEditingController();
+    _titleController = TextEditingController(); // Khởi tạo controller tiêu đề
+    _contentController = TextEditingController(); // Khởi tạo controller nội dung
     super.initState();
   }
 
-  void _textControlerListener() async {
+  void _textControllerListener() async {
     final note = _note;
     if (note == null) {
       return;
     }
-    final text = _textController.text;
+    final title = _titleController.text;
+    final content = _contentController.text;
     await _noteServices.updateNote(
       documentId: note.documentId,
-      text: text,
+      title: title, // Thêm tiêu đề
+      text: content, // Sử dụng nội dung
       imagePaths: _imagePaths,
       reminderAt: _reminderAt,
       reminderTitle: _reminderTitleController.text.trim().isEmpty
@@ -53,16 +57,19 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
     );
   }
 
-  void _setupTextControlerListener() {
-    _textController.removeListener(_textControlerListener);
-    _textController.addListener(_textControlerListener);
+  void _setupTextControllerListener() {
+    _titleController.removeListener(_textControllerListener);
+    _titleController.addListener(_textControllerListener);
+    _contentController.removeListener(_textControllerListener);
+    _contentController.addListener(_textControllerListener);
   }
 
   Future<CloudNote> createOrGetExistingNote(BuildContext context) async {
     final widgetNote = context.getArgument<CloudNote>();
     if (widgetNote != null) {
       _note = widgetNote;
-      _textController.text = widgetNote.text;
+      _titleController.text = widgetNote.title ?? ''; // Lấy tiêu đề từ note
+      _contentController.text = widgetNote.text; // Lấy nội dung từ note
       _imagePaths = widgetNote.imagePaths ?? [];
       _reminderAt = widgetNote.reminderAt;
       _reminderTitleController.text = widgetNote.reminderTitle ?? '';
@@ -81,18 +88,20 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
 
   void _deleteNoteIfTextIsEmpty() {
     final note = _note;
-    if (_textController.text.isEmpty && note != null && _imagePaths.isEmpty) {
+    if (_titleController.text.isEmpty && _contentController.text.isEmpty && note != null && _imagePaths.isEmpty) {
       _noteServices.deleteNote(documentId: note.documentId);
     }
   }
 
   void _saveNoteIfTextNotEmpty() async {
     final note = _note;
-    final text = _textController.text;
-    if (note != null && (text.isNotEmpty || _imagePaths.isNotEmpty)) {
+    final title = _titleController.text;
+    final content = _contentController.text;
+    if (note != null && (title.isNotEmpty || content.isNotEmpty || _imagePaths.isNotEmpty)) {
       await _noteServices.updateNote(
         documentId: note.documentId,
-        text: text,
+        title: title,
+        text: content,
         imagePaths: _imagePaths,
         reminderAt: _reminderAt,
         reminderTitle: _reminderTitleController.text.trim().isEmpty
@@ -153,8 +162,6 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
       ),
     );
   }
-
-
 
   void _showImageGallery(BuildContext context, int initialIndex) {
     final List<ImageProvider> imageProviders = [
@@ -267,7 +274,8 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
           // Auto-save note with new image
           await _noteServices.updateNote(
             documentId: _note!.documentId,
-            text: _textController.text,
+            title: _titleController.text,
+            text: _contentController.text,
             imagePaths: _imagePaths,
           );
           print('Note updated with image path: $imagePath');
@@ -321,12 +329,13 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
       // Delete image from local storage
       await _noteServices.deleteNoteImage(removedPath);
 
-       // Update note without the removed image
-       await _noteServices.updateNote(
-         documentId: _note!.documentId,
-         text: _textController.text,
-         imagePaths: _imagePaths,
-       );
+      // Update note without the removed image
+      await _noteServices.updateNote(
+        documentId: _note!.documentId,
+        title: _titleController.text,
+        text: _contentController.text,
+        imagePaths: _imagePaths,
+      );
 
       ScaffoldMessenger.of(
         context,
@@ -338,7 +347,8 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   void dispose() {
     _deleteNoteIfTextIsEmpty();
     _saveNoteIfTextNotEmpty();
-    _textController.dispose();
+    _titleController.dispose();
+    _contentController.dispose();
     _reminderTitleController.dispose();
     super.dispose();
   }
@@ -351,12 +361,14 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
         actions: [
           IconButton(
             onPressed: () async {
-              final text = _textController.text;
-              if (_note == null || (text.isEmpty && _imagePaths.isEmpty)) {
+              final title = _titleController.text;
+              final content = _contentController.text;
+              if (_note == null || (title.isEmpty && content.isEmpty && _imagePaths.isEmpty)) {
                 await showCannotShareEmptyNoteDialog(context);
               } else {
                 // Share text and images
-                String shareText = text;
+                String shareText = title.isNotEmpty ? '**$title**\n\n' : '';
+                shareText += content;
                 if (_imagePaths.isNotEmpty) {
                   shareText += '\n\nImages: ${_imagePaths.join('\n')}';
                 }
@@ -373,7 +385,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
         builder: (context, snapshot) {
           switch (snapshot.connectionState) {
             case ConnectionState.done:
-              _setupTextControlerListener();
+              _setupTextControllerListener();
               if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
               }
@@ -381,7 +393,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                 return const Center(child: Text('Unable to create note.'));
               }
               _note = snapshot.data!;
-              _setupTextControlerListener();
+              _setupTextControllerListener();
 
               return Column(
                 children: [
@@ -409,7 +421,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                                   setState(() {
                                     _reminderAt = null;
                                   });
-                                  _textControlerListener();
+                                  _textControllerListener();
                                 },
                                 child: const Text('Xoá hẹn'),
                               ),
@@ -426,7 +438,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                                   border: OutlineInputBorder(),
                                   isDense: true,
                                 ),
-                                onChanged: (_) => _textControlerListener(),
+                                onChanged: (_) => _textControllerListener(),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -455,7 +467,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                                 setState(() {
                                   _reminderAt = combined;
                                 });
-                                _textControlerListener();
+                                _textControllerListener();
                               },
                               icon: const Icon(Icons.calendar_today),
                               label: Text(
@@ -514,14 +526,14 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                                         fit: BoxFit.cover,
                                         errorBuilder:
                                             (context, error, stackTrace) {
-                                              return Container(
-                                                color: Colors.grey[200],
-                                                child: Icon(
-                                                  Icons.error,
-                                                  color: Colors.red,
-                                                ),
-                                              );
-                                            },
+                                          return Container(
+                                            color: Colors.grey[200],
+                                            child: Icon(
+                                              Icons.error,
+                                              color: Colors.red,
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
                                     // Nút xoá nhỏ
@@ -638,14 +650,42 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                       ),
                     ),
 
-                  // Text field
+                  // Title field (in đậm)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: TextField(
+                      controller: _titleController,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Tiêu đề note...',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Divider giữa tiêu đề và nội dung
+                  Divider(height: 1, thickness: 1, color: Colors.grey[300]),
+
+                  // Content field (bình thường)
                   Expanded(
                     child: TextField(
-                      controller: _textController,
+                      controller: _contentController,
                       keyboardType: TextInputType.multiline,
                       maxLines: null,
-                      decoration: const InputDecoration(
-                        hintText: 'Start typing your note...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.normal,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Nội dung note...',
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.all(16),
                       ),

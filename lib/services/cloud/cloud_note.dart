@@ -6,6 +6,7 @@ class CloudNote {
   final String documentId;
   final String ownerUserId;
   final String text;
+  final String title;
   final List<String>? imagePaths;
   final DateTime? reminderAt;
   final String? reminderTitle;
@@ -14,6 +15,7 @@ class CloudNote {
     required this.documentId,
     required this.ownerUserId,
     required this.text,
+    required this.title,
     this.imagePaths,
     this.reminderAt,
     this.reminderTitle,
@@ -23,6 +25,7 @@ class CloudNote {
     : documentId = snapshot.id,
       ownerUserId = snapshot.data()[ownerUserIdFieldName],
       text = snapshot.data()[textFieldName] as String,
+      title = (snapshot.data()[titleFieldName] ?? '') as String,
       imagePaths = (snapshot.data()[imagePathsFieldName] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),

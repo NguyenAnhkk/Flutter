@@ -28,7 +28,17 @@ class NotesListView extends StatelessWidget {
           onTap: () {
             onTap(note);
           },
-          title: Text(note.text, maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            note.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            note.text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           trailing: IconButton(
             onPressed: () async {
               final shouldDelete = await showDeleteDialog(context);
