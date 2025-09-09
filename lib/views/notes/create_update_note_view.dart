@@ -26,6 +26,8 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
   List<String> _imagePaths = [];
   List<File> _localImages = [];
   bool _isUploading = false;
+  DateTime? _reminderAt;
+  final TextEditingController _reminderTitleController = TextEditingController();
 
   @override
   void initState() {
@@ -44,6 +46,10 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
       documentId: note.documentId,
       text: text,
       imagePaths: _imagePaths,
+      reminderAt: _reminderAt,
+      reminderTitle: _reminderTitleController.text.trim().isEmpty
+          ? null
+          : _reminderTitleController.text.trim(),
     );
   }
 
@@ -58,6 +64,8 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
       _note = widgetNote;
       _textController.text = widgetNote.text;
       _imagePaths = widgetNote.imagePaths ?? [];
+      _reminderAt = widgetNote.reminderAt;
+      _reminderTitleController.text = widgetNote.reminderTitle ?? '';
       return widgetNote;
     }
     final existingNote = _note;
@@ -86,6 +94,10 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
         documentId: note.documentId,
         text: text,
         imagePaths: _imagePaths,
+        reminderAt: _reminderAt,
+        reminderTitle: _reminderTitleController.text.trim().isEmpty
+            ? null
+            : _reminderTitleController.text.trim(),
       );
     }
   }
@@ -327,6 +339,7 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
     _deleteNoteIfTextIsEmpty();
     _saveNoteIfTextNotEmpty();
     _textController.dispose();
+    _reminderTitleController.dispose();
     super.dispose();
   }
 
@@ -372,6 +385,92 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
 
               return Column(
                 children: [
+                  // Reminder controls
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.alarm, color: Colors.blue),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Hẹn nhắc',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (_reminderAt != null)
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _reminderAt = null;
+                                  });
+                                  _textControlerListener();
+                                },
+                                child: const Text('Xoá hẹn'),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _reminderTitleController,
+                                decoration: const InputDecoration(
+                                  hintText: 'Tiêu đề thông báo (tuỳ chọn)',
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                ),
+                                onChanged: (_) => _textControlerListener(),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                final now = DateTime.now();
+                                final date = await showDatePicker(
+                                  context: context,
+                                  initialDate: _reminderAt ?? now,
+                                  firstDate: now,
+                                  lastDate: DateTime(now.year + 5),
+                                );
+                                if (date == null) return;
+                                final time = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay.fromDateTime(_reminderAt ?? now.add(const Duration(minutes: 5))),
+                                );
+                                if (time == null) return;
+                                final combined = DateTime(
+                                  date.year,
+                                  date.month,
+                                  date.day,
+                                  time.hour,
+                                  time.minute,
+                                );
+                                setState(() {
+                                  _reminderAt = combined;
+                                });
+                                _textControlerListener();
+                              },
+                              icon: const Icon(Icons.calendar_today),
+                              label: Text(
+                                _reminderAt == null
+                                    ? 'Chọn thời gian'
+                                    : '${_reminderAt!.day.toString().padLeft(2, '0')}/${_reminderAt!.month.toString().padLeft(2, '0')}/${_reminderAt!.year} ${_reminderAt!.hour.toString().padLeft(2, '0')}:${_reminderAt!.minute.toString().padLeft(2, '0')}',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Divider(height: 1),
+                      ],
+                    ),
+                  ),
 
                   // Image gallery - show both saved and local images
                   if (_imagePaths.isNotEmpty || _localImages.isNotEmpty)

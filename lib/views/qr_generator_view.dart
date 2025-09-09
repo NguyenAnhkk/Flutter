@@ -199,6 +199,36 @@ class _QRGeneratorViewState extends State<QRGeneratorView> {
     });
   }
 
+  bool _looksLikeUrl(String input) {
+    final trimmed = input.trim();
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null) return false;
+    if (uri.hasScheme) return true;
+    return trimmed.startsWith('www.');
+  }
+
+  String? _extractUrlCandidate(String input) {
+    final text = input.trim();
+    final urlPattern = RegExp(
+      r'((?:[a-zA-Z][\w+.-]*://)?(?:www\.)?[\w.-]+\.[a-zA-Z]{2,}(?:[/?#][^\s]*)?)',
+      multiLine: true,
+    );
+    final match = urlPattern.firstMatch(text);
+    if (match != null) {
+      return match.group(0);
+    }
+    return null;
+  }
+
+  String _normalizeUrl(String input) {
+    final trimmed = input.trim();
+    final hasScheme = RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*://').hasMatch(trimmed);
+    if (hasScheme) return trimmed;
+    // Luôn thêm https nếu thiếu scheme để tăng khả năng mở liên kết
+    if (trimmed.startsWith('www.')) return 'https://$trimmed';
+    return 'https://$trimmed';
+  }
+
   void _handleScannedBarcode(BarcodeCapture barcodes) {
     final barcode = barcodes.barcodes.first;
     if (barcode.rawValue == null) {
@@ -220,7 +250,8 @@ class _QRGeneratorViewState extends State<QRGeneratorView> {
   }
 
   Future<void> _showScanResultDialog(String scannedData) async {
-    final isUrl = Uri.tryParse(scannedData)?.hasAbsolutePath ?? false;
+    final candidate = _extractUrlCandidate(scannedData);
+    final isUrl = candidate != null && _looksLikeUrl(candidate);
 
     await showDialog(
       context: context,
@@ -254,7 +285,7 @@ class _QRGeneratorViewState extends State<QRGeneratorView> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  _launchUrl(scannedData);
+                  _launchUrl(candidate!);
                 },
                 child: const Text('Mở Liên Kết'),
               ),
@@ -265,11 +296,25 @@ class _QRGeneratorViewState extends State<QRGeneratorView> {
   }
 
   Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      _showSnackBar('Không thể mở liên kết: $url');
+    try {
+      final normalized = _normalizeUrl(url);
+      final uri = Uri.parse(normalized);
+      bool launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        // Fallback: thử mở bằng webview trong ứng dụng
+        launched = await launchUrl(
+          uri,
+          mode: LaunchMode.inAppBrowserView,
+        );
+        if (!launched) {
+          _showSnackBar('Không thể mở liên kết: $normalized');
+        }
+      }
+    } catch (e) {
+      _showSnackBar('Lỗi khi mở liên kết: $e');
     }
   }
 
@@ -635,7 +680,6 @@ class _QRGeneratorViewState extends State<QRGeneratorView> {
                     RepaintBoundary(
                       key: _qrKey,
                       child: Container(
-                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -666,24 +710,6 @@ class _QRGeneratorViewState extends State<QRGeneratorView> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _qrData,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'monospace',
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     Column(
                       children: [
                         Row(

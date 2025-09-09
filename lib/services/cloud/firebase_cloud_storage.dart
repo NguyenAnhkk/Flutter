@@ -28,11 +28,21 @@ class FirebaseCloudStorage {
     required String documentId,
     required String text,
     List<String>? imagePaths,
+    DateTime? reminderAt,
+    String? reminderTitle,
   }) async {
     try {
       final Map<String, Object?> data = {textFieldName: text};
       if (imagePaths != null) {
         data[imagePathsFieldName] = imagePaths;
+      }
+      if (reminderAt != null) {
+        data[reminderAtFieldName] = Timestamp.fromDate(reminderAt);
+      } else {
+        data[reminderAtFieldName] = null;
+      }
+      if (reminderTitle != null) {
+        data[reminderTitleFieldName] = reminderTitle;
       }
       await notes.doc(documentId).update(data);
     } catch (e) {
@@ -58,6 +68,8 @@ class FirebaseCloudStorage {
       ownerUserIdFieldName: ownerUserId,
       textFieldName: '',
       imagePathsFieldName: <String>[],
+      reminderAtFieldName: null,
+      reminderTitleFieldName: null,
     });
     final fetchedNote = await document.get();
     return CloudNote(
@@ -65,6 +77,8 @@ class FirebaseCloudStorage {
       ownerUserId: ownerUserId,
       text: '',
       imagePaths: const [],
+      reminderAt: null,
+      reminderTitle: null,
     );
   }
 

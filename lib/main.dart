@@ -18,6 +18,8 @@ import 'package:projects/views/verify_email_view.dart';
 import 'package:projects/views/qr_generator_view.dart';
 import 'package:projects/constants/routes.dart';
 import 'package:test/expect.dart';
+import 'package:projects/services/notifications/notification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +58,19 @@ class HomePage extends StatelessWidget {
       },
       builder: (context, state) {
         if (state is AuthStateLoggedIn) {
+          // init FCM and save token
+          NotificationService.instance.initializeAndGetToken().then((token) async {
+            if (token != null) {
+              final uid = state.user.id;
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(uid)
+                  .set({
+                'fcm_token': token,
+                'updated_at': FieldValue.serverTimestamp(),
+              }, SetOptions(merge: true));
+            }
+          });
           return const NotesView();
         } else if (state is AuthStateNeedsVerifitication) {
           return const VerifyEmailView();
