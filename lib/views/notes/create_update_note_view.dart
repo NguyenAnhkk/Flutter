@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:projects/services/notifications/notification_service.dart';
 
 class CreateUpdateNoteView extends StatefulWidget {
   const CreateUpdateNoteView({super.key});
@@ -467,6 +468,19 @@ class _CreateUpdateNoteViewState extends State<CreateUpdateNoteView> {
                                 setState(() {
                                   _reminderAt = combined;
                                 });
+                                // schedule local notification
+                                if (_note != null) {
+                                  final notifTitle = _reminderTitleController.text.trim().isEmpty
+                                      ? (_titleController.text.isEmpty ? 'Nhắc nhở' : _titleController.text)
+                                      : _reminderTitleController.text.trim();
+                                  final body = _contentController.text.isEmpty ? 'Bạn có một ghi chú được hẹn nhắc.' : _contentController.text;
+                                  await NotificationService.instance.scheduleLocalNotification(
+                                    id: _note!.documentId.hashCode,
+                                    scheduledAt: combined,
+                                    title: notifTitle,
+                                    body: body,
+                                  );
+                                }
                                 _textControllerListener();
                               },
                               icon: const Icon(Icons.calendar_today),

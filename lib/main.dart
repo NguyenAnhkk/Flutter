@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:projects/firebase_options.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:path/path.dart';
 import 'package:projects/helpers/loading/loading_screen.dart';
 import 'package:projects/services/auth/auth_service.dart';
 import 'package:projects/services/auth/bloc/auth_bloc.dart';
@@ -17,12 +17,15 @@ import 'package:projects/views/register_view.dart';
 import 'package:projects/views/verify_email_view.dart';
 import 'package:projects/views/qr_generator_view.dart';
 import 'package:projects/constants/routes.dart';
-import 'package:test/expect.dart';
 import 'package:projects/services/notifications/notification_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  NotificationService.instance.initializeLocalNotifications();
   runApp(
     MaterialApp(
       title: 'Flutter Demo',
@@ -58,7 +61,6 @@ class HomePage extends StatelessWidget {
       },
       builder: (context, state) {
         if (state is AuthStateLoggedIn) {
-          // init FCM and save token
           NotificationService.instance.initializeAndGetToken().then((token) async {
             if (token != null) {
               final uid = state.user.id;
